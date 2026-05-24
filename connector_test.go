@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"beak-agent-weixin/sdk"
+	"github.com/CMWFireworm/beak-agent-channel-wechat/sdk"
 )
 
 func TestWeixinConnectorMetadataAndSchema(t *testing.T) {

@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"beak-agent-weixin/internal/weixin"
-	"beak-agent-weixin/sdk"
+	"github.com/CMWFireworm/beak-agent-channel-wechat/internal/weixin"
+	"github.com/CMWFireworm/beak-agent-channel-wechat/sdk"
 )
 
 type Connector struct {

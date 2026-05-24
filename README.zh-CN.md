@@ -42,8 +42,8 @@ v1 不支持：
 
 ```go
 import (
-	beakweixin "beak-agent-weixin"
-	"beak-agent-weixin/sdk"
+	beakweixin "github.com/CMWFireworm/beak-agent-channel-wechat"
+	"github.com/CMWFireworm/beak-agent-channel-wechat/sdk"
 )
 
 func WeixinConnector() sdk.Connector {

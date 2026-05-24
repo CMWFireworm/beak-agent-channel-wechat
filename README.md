@@ -33,8 +33,8 @@ Out of v1 scope: media, voice, typing status, CDN/AES media upload/download, and
 
 ```go
 import (
-	beakweixin "beak-agent-weixin"
-	"beak-agent-weixin/sdk"
+	beakweixin "github.com/CMWFireworm/beak-agent-channel-wechat"
+	"github.com/CMWFireworm/beak-agent-channel-wechat/sdk"
 )
 
 func WeixinConnector() sdk.Connector {

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"beak-agent-weixin/internal/bridge"
+	"github.com/CMWFireworm/beak-agent-channel-wechat/internal/bridge"
 )
 
 func TestChannelLoginStoresAccount(t *testing.T) {
