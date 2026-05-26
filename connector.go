@@ -20,32 +20,31 @@ func NewConnector() Connector {
 	return Connector{channel: Channel{}}
 }
 
-func (c Connector) Metadata() sdk.ConnectorMetadata {
+func (c Connector) Metadata(context.Context) (*sdk.ConnectorMetadata, error) {
 	meta := c.channel.Metadata()
 	caps := c.channel.Capabilities()
-	return sdk.ConnectorMetadata{
+	return &sdk.ConnectorMetadata{
 		ID:          meta.ID,
 		Platform:    meta.Platform,
 		Label:       meta.Label,
 		Description: meta.Description,
 		Capabilities: sdk.Capabilities{
-			LoginModes:     []string{sdk.LoginModeQRCode},
-			Text:           caps.Text,
-			Media:          caps.Media,
-			GroupChat:      true,
-			DirectChat:     caps.DirectChat,
-			BlockStreaming: caps.BlockStreaming,
+			LoginModes: []string{sdk.LoginModeQRCode},
+			Text:       caps.Text,
+			Media:      caps.Media,
+			GroupChat:  true,
+			DirectChat: caps.DirectChat,
 		},
-	}
+	}, nil
 }
 
-func (Connector) CredentialSchema(context.Context) sdk.CredentialSchema {
-	return sdk.CredentialSchema{
+func (Connector) CredentialSchema(context.Context) (*sdk.CredentialSchema, error) {
+	return &sdk.CredentialSchema{
 		Type:                 "object",
 		LoginModes:           []string{sdk.LoginModeQRCode},
 		Properties:           map[string]sdk.CredentialField{},
 		AdditionalProperties: false,
-	}
+	}, nil
 }
 
 func (c Connector) StartLogin(ctx context.Context, req sdk.LoginStartRequest) (*sdk.LoginChallenge, error) {
@@ -84,7 +83,15 @@ func (c Connector) PollLogin(ctx context.Context, req sdk.LoginPollRequest) (*sd
 		account := store.accountToSDK(*status.Account)
 		account.WorkspaceUUID = req.WorkspaceUUID
 		account.ChannelUUID = req.ChannelUUID
-		out.Account = account
+		out.AccountUUID = account.UUID
+		out.Account = sdk.Account{
+			UUID:        account.UUID,
+			DisplayName: account.DisplayName,
+			Metadata: map[string]any{
+				"platform":   account.Platform,
+				"channel_id": account.ChannelUUID,
+			},
+		}
 		out.Credential = account.Credential
 		out.State = account.State
 	}
@@ -140,7 +147,7 @@ func (c Connector) Send(ctx context.Context, runtime sdk.Runtime, req sdk.Outbou
 	}, nil
 }
 
-func (Connector) Stop(ctx context.Context, account sdk.ChannelAccount) error {
+func (Connector) Stop(ctx context.Context, account sdk.RuntimeAccount) error {
 	state := sdkAccountToState(account)
 	if strings.TrimSpace(state.BotToken) == "" {
 		return nil
@@ -167,12 +174,6 @@ func (c Connector) runtimeFromSDK(runtime sdk.Runtime, account *sdk.ChannelAccou
 		if native.State == nil {
 			native.State = store
 		}
-		if native.HTTPClient == nil {
-			native.HTTPClient = runtime.HTTPClient
-		}
-		if native.Logger == nil {
-			native.Logger = runtime.Logger
-		}
 		return native, store
 	}
 	if native, ok := runtime.Native.(*Runtime); ok && native != nil {
@@ -186,20 +187,12 @@ func (c Connector) runtimeFromSDK(runtime sdk.Runtime, account *sdk.ChannelAccou
 		if out.State == nil {
 			out.State = store
 		}
-		if out.HTTPClient == nil {
-			out.HTTPClient = runtime.HTTPClient
-		}
-		if out.Logger == nil {
-			out.Logger = runtime.Logger
-		}
 		return out, store
 	}
 	out := Runtime{
 		WorkspaceUUID:   runtime.WorkspaceUUID,
 		ChannelUUID:     runtime.Channel.UUID,
 		State:           store,
-		HTTPClient:      runtime.HTTPClient,
-		Logger:          runtime.Logger,
 		PollInterval:    runtime.PollInterval,
 		StreamReconnect: runtime.StreamReconnect,
 	}
@@ -487,7 +480,7 @@ func (a gatewayRuntimeAdapter) StreamWeixinSession(ctx context.Context, sessionU
 			MessageUUID:   event.MessageUUID,
 			SenderID:      event.SenderID,
 			Content:       event.Content,
-			Payload:       event.Payload,
+			Payload:       rawPayload(event.Payload),
 		})
 	})
 }
@@ -561,6 +554,20 @@ func stringValue(value any) string {
 	default:
 		return fmt.Sprint(typed)
 	}
+}
+
+func rawPayload(value any) json.RawMessage {
+	if value == nil {
+		return nil
+	}
+	if raw, ok := value.(json.RawMessage); ok {
+		return raw
+	}
+	data, err := json.Marshal(value)
+	if err != nil {
+		return nil
+	}
+	return data
 }
 
 func firstString(values ...any) string {

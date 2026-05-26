@@ -18,7 +18,10 @@ func TestWeixinConnectorMetadataAndSchema(t *testing.T) {
 	connector := NewConnector()
 	var _ sdk.Connector = connector
 
-	metadata := connector.Metadata()
+	metadata, err := connector.Metadata(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
 	if metadata.ID != ID || metadata.Platform != Platform || metadata.Label != "Weixin" {
 		t.Fatalf("metadata=%+v", metadata)
 	}
@@ -29,7 +32,10 @@ func TestWeixinConnectorMetadataAndSchema(t *testing.T) {
 		t.Fatalf("login modes=%+v", metadata.Capabilities.LoginModes)
 	}
 
-	schema := connector.CredentialSchema(context.Background())
+	schema, err := connector.CredentialSchema(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
 	if schema.Type != "object" || schema.AdditionalProperties {
 		t.Fatalf("schema=%+v", schema)
 	}
@@ -70,7 +76,7 @@ func TestWeixinConnectorQRCodeLoginThroughSDK(t *testing.T) {
 	}
 	httpClient := &http.Client{Transport: rewriteTransport{target: targetURL, base: http.DefaultTransport}}
 	connector := NewConnector()
-	runtime := sdk.Runtime{HTTPClient: httpClient}
+	runtime := sdk.Runtime{Native: Runtime{HTTPClient: httpClient}}
 
 	challenge, err := connector.StartLogin(context.Background(), sdk.LoginStartRequest{
 		WorkspaceUUID: "workspace-1",
